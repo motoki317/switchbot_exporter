@@ -1,13 +1,13 @@
-name: main
+name: master
 
 on:
   push:
     branches:
-      - main
+      - master
 
 env:
   IMAGE_NAME: switchbot_exporter
-  IMAGE_TAG: main
+  IMAGE_TAG: master
 
 jobs:
   image:
