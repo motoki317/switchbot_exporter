@@ -9,9 +9,12 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/tmp/go/cache CGO_ENABLED=0 go build -o /app/switchbot_exporter -ldflags "-s -w"
 
-FROM scratch
+FROM alpine:3.14.2
 
 WORKDIR /app
+
+RUN apk add --no-cache --update ca-certificates && \
+    update-ca-certificates
 
 COPY --from=builder /app/switchbot_exporter .
 
