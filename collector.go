@@ -20,7 +20,7 @@ var (
 			Name:      "temperature",
 			Help:      "Temperature of the meters.",
 		},
-		[]string{"device_id"},
+		[]string{"device_id", "device_name"},
 	)
 	humidity = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -28,7 +28,7 @@ var (
 			Name:      "humidity",
 			Help:      "Humidity of the meters.",
 		},
-		[]string{"device_id"},
+		[]string{"device_id", "device_name"},
 	)
 )
 
@@ -41,8 +41,8 @@ const (
 )
 
 type switchBotCollector struct {
-	client   *switchbot.Client
-	meterIDs []string
+	client *switchbot.Client
+	meters []switchbot.Device
 }
 
 func newSwitchBotCollector(token string) *switchBotCollector {
@@ -61,8 +61,8 @@ func (c *switchBotCollector) init() error {
 	for _, d := range devices {
 		switch d.Type {
 		case switchbot.Meter:
-			c.meterIDs = append(c.meterIDs, d.ID)
-			log.Printf("adding meter with device id: %s\n", d.ID)
+			c.meters = append(c.meters, d)
+			log.Printf("adding meter with device id: %s, name: %s\n", d.ID, d.Name)
 		}
 	}
 
@@ -74,16 +74,21 @@ func (c *switchBotCollector) updateLoop() {
 	ticker := time.NewTicker(scrapeInterval)
 
 	log.Println("start collecting...")
+	c.update()
 	select {
 	case <-ticker.C:
-		for _, meterID := range c.meterIDs {
-			status, err := c.client.Device().Status(context.Background(), meterID)
-			if err != nil {
-				log.Printf("failed to update status for device: %s\n", meterID)
-				continue
-			}
-			temperature.WithLabelValues(status.ID).Set(status.Temperature)
-			humidity.WithLabelValues(status.ID).Set(float64(status.Humidity))
+		c.update()
+	}
+}
+
+func (c *switchBotCollector) update() {
+	for _, meter := range c.meters {
+		status, err := c.client.Device().Status(context.Background(), meter.ID)
+		if err != nil {
+			log.Printf("failed to update status for device id: %s, name: %s\n", meter.ID, meter.Name)
+			continue
 		}
+		temperature.WithLabelValues(meter.ID, meter.Name).Set(status.Temperature)
+		humidity.WithLabelValues(meter.ID, meter.Name).Set(float64(status.Humidity))
 	}
 }
