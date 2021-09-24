@@ -75,9 +75,11 @@ func (c *switchBotCollector) updateLoop() {
 
 	log.Println("start collecting...")
 	c.update()
-	select {
-	case <-ticker.C:
-		c.update()
+	for {
+		select {
+		case <-ticker.C:
+			c.update()
+		}
 	}
 }
 
