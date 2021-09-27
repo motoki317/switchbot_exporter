@@ -87,7 +87,7 @@ func (c *switchBotCollector) update() {
 	for _, meter := range c.meters {
 		status, err := c.client.Device().Status(context.Background(), meter.ID)
 		if err != nil {
-			log.Printf("failed to update status for device id: %s, name: %s\n", meter.ID, meter.Name)
+			log.Printf("failed to update status (device id: %s, name: %s): %v\n", meter.ID, meter.Name, err)
 			continue
 		}
 		temperature.WithLabelValues(meter.ID, meter.Name).Set(status.Temperature)
