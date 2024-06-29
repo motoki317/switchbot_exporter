@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	port  = flag.Int("port", 9257, "Port to bind.")
-	token = flag.String("token", "", "The SwitchBot open token.")
+	port   = flag.Int("port", 9257, "Port to bind.")
+	token  = flag.String("token", "", "The SwitchBot open token.")
+	secret = flag.String("secret", "", "The SwitchBot secret key.")
 )
 
 func main() {
@@ -22,8 +23,11 @@ func main() {
 	if *token == "" {
 		panic("open token is required")
 	}
+	if *secret == "" {
+		panic("secret token is required")
+	}
 
-	c := newSwitchBotCollector(*token)
+	c := newSwitchBotCollector(*token, *secret)
 	if err := c.init(); err != nil {
 		panic(err)
 	}

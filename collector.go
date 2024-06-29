@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/nasa9084/go-switchbot"
+	"github.com/nasa9084/go-switchbot/v3"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -45,9 +45,9 @@ type switchBotCollector struct {
 	meters []switchbot.Device
 }
 
-func newSwitchBotCollector(token string) *switchBotCollector {
+func newSwitchBotCollector(token, secret string) *switchBotCollector {
 	return &switchBotCollector{
-		client: switchbot.New(token),
+		client: switchbot.New(token, secret),
 	}
 }
 
