@@ -73,6 +73,11 @@ func (c *switchBotCollector) update() {
 			log.Printf("failed to update status (device id: %s, name: %s): %v\n", meter.ID, meter.Name, err)
 			continue
 		}
+		if status.Temperature == 0 && status.Humidity == 0 {
+			// API sometimes returns zero values for some reason
+			log.Printf("[warn] zero values for device id: %s, name: %s, skipping update\n", meter.ID, meter.Name)
+			continue
+		}
 
 		c.temperature[meter.ID].Set(status.Temperature)
 		c.humidity[meter.ID].Set(float64(status.Humidity))
