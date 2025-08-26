@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/VictoriaMetrics/metrics"
 )
 
 var (
@@ -34,9 +33,8 @@ func main() {
 
 	go c.updateLoop()
 
-	http.Handle("/metrics", promhttp.HandlerFor(
-		prometheus.DefaultGatherer,
-		promhttp.HandlerOpts{},
-	))
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		metrics.WritePrometheus(w, true)
+	})
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
 }

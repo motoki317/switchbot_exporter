@@ -2,39 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/VictoriaMetrics/metrics"
 	"github.com/nasa9084/go-switchbot/v3"
-	"github.com/prometheus/client_golang/prometheus"
 )
-
-const (
-	promNamespace = "switchbot"
-)
-
-var (
-	temperature = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: promNamespace,
-			Name:      "temperature",
-			Help:      "Temperature of the meters.",
-		},
-		[]string{"device_id", "device_name"},
-	)
-	humidity = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: promNamespace,
-			Name:      "humidity",
-			Help:      "Humidity of the meters.",
-		},
-		[]string{"device_id", "device_name"},
-	)
-)
-
-func init() {
-	prometheus.MustRegister(temperature, humidity)
-}
 
 const (
 	scrapeInterval = 60 * time.Second
@@ -43,11 +17,17 @@ const (
 type switchBotCollector struct {
 	client *switchbot.Client
 	meters []switchbot.Device
+
+	temperature map[string]*metrics.Gauge
+	humidity    map[string]*metrics.Gauge
 }
 
 func newSwitchBotCollector(token, secret string) *switchBotCollector {
 	return &switchBotCollector{
 		client: switchbot.New(token, secret),
+
+		temperature: make(map[string]*metrics.Gauge),
+		humidity:    make(map[string]*metrics.Gauge),
 	}
 }
 
@@ -63,6 +43,9 @@ func (c *switchBotCollector) init() error {
 		case switchbot.Meter:
 			c.meters = append(c.meters, d)
 			log.Printf("adding meter with device id: %s, name: %s\n", d.ID, d.Name)
+
+			c.temperature[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_temperature{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
+			c.humidity[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_humidity{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 		}
 	}
 
@@ -90,7 +73,8 @@ func (c *switchBotCollector) update() {
 			log.Printf("failed to update status (device id: %s, name: %s): %v\n", meter.ID, meter.Name, err)
 			continue
 		}
-		temperature.WithLabelValues(meter.ID, meter.Name).Set(status.Temperature)
-		humidity.WithLabelValues(meter.ID, meter.Name).Set(float64(status.Humidity))
+
+		c.temperature[meter.ID].Set(status.Temperature)
+		c.humidity[meter.ID].Set(float64(status.Humidity))
 	}
 }
