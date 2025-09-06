@@ -35,7 +35,7 @@ func main() {
 		metrics.WritePrometheus(w, false)
 	})
 
-	slog.Info("start listening...", "port", *port)
+	slog.Info("start listening...", "version", GetFormattedVersion(), "port", *port)
 	err := http.ListenAndServe(":"+strconv.Itoa(*port), nil)
 	if err != nil {
 		panic(err)
