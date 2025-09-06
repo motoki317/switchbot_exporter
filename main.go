@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -18,8 +17,6 @@ var (
 
 func main() {
 	flag.Parse()
-	log.SetFlags(log.Ldate | log.Lmicroseconds)
-
 	if *token == "" {
 		panic("open token is required")
 	}
