@@ -24,7 +24,7 @@ var (
 	deviceName = flag.String("device-name", "", "SwitchBot device name")
 
 	csvFile  = flag.String("csv", "", "CSV file path")
-	timezone = flag.String("timezone", "", "Timezone")
+	timezone = flag.String("timezone", "Local", "Timezone")
 )
 
 func main() {
