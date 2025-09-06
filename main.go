@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -34,7 +35,12 @@ func main() {
 	go c.updateLoop()
 
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		metrics.WritePrometheus(w, true)
+		metrics.WritePrometheus(w, false)
 	})
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
+
+	slog.Info("start listening...", "port", *port)
+	err := http.ListenAndServe(":"+strconv.Itoa(*port), nil)
+	if err != nil {
+		panic(err)
+	}
 }
