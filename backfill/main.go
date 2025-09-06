@@ -17,13 +17,14 @@ import (
 )
 
 var (
-	remoteWriteURL = flag.String("remote-write-url", "http://localhost:8428/api/v1/write", "The remote write URL.")
+	remoteWriteURL = flag.String("remote-write-url", "http://localhost:8428/api/v1/write", "The remote write URL")
 
-	deviceType = flag.String("device-type", string(switchbot.Meter), "SwitchBot device type.")
-	deviceID   = flag.String("device-id", "", "SwitchBot device ID.")
-	deviceName = flag.String("device-name", "", "SwitchBot device name.")
+	deviceType = flag.String("device-type", string(switchbot.Meter), "SwitchBot device type")
+	deviceID   = flag.String("device-id", "", "SwitchBot device ID")
+	deviceName = flag.String("device-name", "", "SwitchBot device name")
 
-	csvFile = flag.String("csv", "", "CSV file path.")
+	csvFile  = flag.String("csv", "", "CSV file path")
+	timezone = flag.String("timezone", "Asia/Tokyo", "Timezone")
 )
 
 func main() {
@@ -47,6 +48,10 @@ func main() {
 	if *csvFile == "" {
 		panic("csv file path is required")
 	}
+	loc, err := time.LoadLocation(*timezone)
+	if err != nil {
+		panic(err)
+	}
 
 	ctx := context.Background()
 	client := promwrite.NewClient(*remoteWriteURL)
@@ -54,12 +59,12 @@ func main() {
 	slog.Info("start backfilling...", "remote_write_url", *remoteWriteURL)
 	ch := make(chan meterRecord, 1000)
 	go func() {
-		err := readMeterCSV(*csvFile, ch)
+		err := readMeterCSV(*csvFile, loc, ch)
 		if err != nil {
 			panic(err)
 		}
 	}()
-	err := backfillMeter(ctx, client, *deviceID, *deviceName, ch)
+	err = backfillMeter(ctx, client, *deviceID, *deviceName, ch)
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +77,7 @@ type meterRecord struct {
 	humidity    float64
 }
 
-func readMeterCSV(csvFile string, ch chan<- meterRecord) error {
+func readMeterCSV(csvFile string, loc *time.Location, ch chan<- meterRecord) error {
 	const (
 		timestampColName   = "Timestamp"
 		temperatureColName = "Temperature_Celsius(°C)"
@@ -117,7 +122,7 @@ func readMeterCSV(csvFile string, ch chan<- meterRecord) error {
 		if err != nil {
 			return fmt.Errorf("reading CSV file: %w", err)
 		}
-		timestamp, err := time.Parse("Jan 02, 2006 15:04:05", record[timestampColIndex])
+		timestamp, err := time.ParseInLocation("Jan 02, 2006 15:04:05", record[timestampColIndex], loc)
 		if err != nil {
 			return fmt.Errorf("parsing timestamp: %w", err)
 		}
