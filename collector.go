@@ -24,7 +24,7 @@ type switchBotCollector struct {
 	plugMiniJP       []switchbot.Device
 	plugVoltage      map[string]*metrics.Gauge
 	plugCurrent      map[string]*metrics.Gauge
-	plugPowerOfDay   map[string]*metrics.Gauge
+	plugPower        map[string]*metrics.Gauge
 	plugMinutesOfDay map[string]*metrics.Gauge
 }
 
@@ -37,7 +37,7 @@ func newSwitchBotCollector(token, secret string) *switchBotCollector {
 
 		plugVoltage:      make(map[string]*metrics.Gauge),
 		plugCurrent:      make(map[string]*metrics.Gauge),
-		plugPowerOfDay:   make(map[string]*metrics.Gauge),
+		plugPower:        make(map[string]*metrics.Gauge),
 		plugMinutesOfDay: make(map[string]*metrics.Gauge),
 	}
 }
@@ -60,7 +60,7 @@ func (c *switchBotCollector) init() error {
 			c.plugMiniJP = append(c.plugMiniJP, d)
 			c.plugVoltage[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_voltage{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 			c.plugCurrent[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_current{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
-			c.plugPowerOfDay[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_power_of_day{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
+			c.plugPower[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_power{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 			c.plugMinutesOfDay[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_minutes_of_day{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 		}
 	}
@@ -105,7 +105,7 @@ func (c *switchBotCollector) update() {
 		}
 		c.plugVoltage[plug.ID].Set(status.Voltage)
 		c.plugCurrent[plug.ID].Set(status.ElectricCurrent)
-		c.plugPowerOfDay[plug.ID].Set(status.Weight)
+		c.plugPower[plug.ID].Set(status.Weight)
 		c.plugMinutesOfDay[plug.ID].Set(float64(status.ElectricityOfDay))
 	}
 }
