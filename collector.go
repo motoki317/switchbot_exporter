@@ -61,7 +61,7 @@ func (c *switchBotCollector) init() error {
 			c.meterTemperature[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_temperature{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 			c.meterHumidity[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_humidity{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 
-		case switchbot.MeterPro:
+		case switchbot.MeterPro, "MeterPro(CO2)":
 			c.devicesMeterPro = append(c.devicesMeterPro, d)
 			c.meterTemperature[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_temperature{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 			c.meterHumidity[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_humidity{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
