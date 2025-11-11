@@ -17,15 +17,17 @@ const (
 type switchBotCollector struct {
 	client *switchbot.Client
 
-	meters           []switchbot.Device
+	devicesMeter     []switchbot.Device
+	devicesMeterPro  []switchbot.Device
 	meterTemperature map[string]*metrics.Gauge
 	meterHumidity    map[string]*metrics.Gauge
+	meterCO2         map[string]*metrics.Gauge
 
-	plugMiniJP       []switchbot.Device
-	plugVoltage      map[string]*metrics.Gauge
-	plugCurrent      map[string]*metrics.Gauge
-	plugPower        map[string]*metrics.Gauge
-	plugMinutesOfDay map[string]*metrics.Gauge
+	devicesPlugMiniJP []switchbot.Device
+	plugVoltage       map[string]*metrics.Gauge
+	plugCurrent       map[string]*metrics.Gauge
+	plugPower         map[string]*metrics.Gauge
+	plugMinutesOfDay  map[string]*metrics.Gauge
 }
 
 func newSwitchBotCollector(token, secret string) *switchBotCollector {
@@ -34,6 +36,7 @@ func newSwitchBotCollector(token, secret string) *switchBotCollector {
 
 		meterTemperature: make(map[string]*metrics.Gauge),
 		meterHumidity:    make(map[string]*metrics.Gauge),
+		meterCO2:         make(map[string]*metrics.Gauge),
 
 		plugVoltage:      make(map[string]*metrics.Gauge),
 		plugCurrent:      make(map[string]*metrics.Gauge),
@@ -51,13 +54,21 @@ func (c *switchBotCollector) init() error {
 
 	for _, d := range devices {
 		slog.Info("device found", "id", d.ID, "name", d.Name, "type", d.Type)
+
 		switch d.Type {
 		case switchbot.Meter:
-			c.meters = append(c.meters, d)
+			c.devicesMeter = append(c.devicesMeter, d)
 			c.meterTemperature[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_temperature{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 			c.meterHumidity[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_humidity{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
+
+		case switchbot.MeterPro:
+			c.devicesMeterPro = append(c.devicesMeterPro, d)
+			c.meterTemperature[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_temperature{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
+			c.meterHumidity[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_humidity{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
+			c.meterCO2[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_co2{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
+
 		case switchbot.PlugMiniJP:
-			c.plugMiniJP = append(c.plugMiniJP, d)
+			c.devicesPlugMiniJP = append(c.devicesPlugMiniJP, d)
 			c.plugVoltage[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_voltage{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 			c.plugCurrent[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_current{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
 			c.plugPower[d.ID] = metrics.NewGauge(fmt.Sprintf(`switchbot_plug_power{device_id="%s", device_name="%s"}`, d.ID, d.Name), nil)
@@ -82,7 +93,7 @@ func (c *switchBotCollector) updateLoop() {
 }
 
 func (c *switchBotCollector) update() {
-	for _, meter := range c.meters {
+	for _, meter := range c.devicesMeter {
 		status, err := c.client.Device().Status(context.Background(), meter.ID)
 		if err != nil {
 			slog.Error("failed to update status", "device_id", meter.ID, "device_name", meter.Name, "error", err)
@@ -97,7 +108,23 @@ func (c *switchBotCollector) update() {
 		c.meterHumidity[meter.ID].Set(float64(status.Humidity))
 	}
 
-	for _, plug := range c.plugMiniJP {
+	for _, meter := range c.devicesMeterPro {
+		status, err := c.client.Device().Status(context.Background(), meter.ID)
+		if err != nil {
+			slog.Error("failed to update status", "device_id", meter.ID, "device_name", meter.Name, "error", err)
+			continue
+		}
+		if status.Temperature == 0 && status.Humidity == 0 {
+			// API sometimes returns zero values for some reason
+			slog.Warn("zero values for device id", "device_id", meter.ID, "device_name", meter.Name)
+			continue
+		}
+		c.meterTemperature[meter.ID].Set(status.Temperature)
+		c.meterHumidity[meter.ID].Set(float64(status.Humidity))
+		c.meterCO2[meter.ID].Set(float64(status.CO2))
+	}
+
+	for _, plug := range c.devicesPlugMiniJP {
 		status, err := c.client.Device().Status(context.Background(), plug.ID)
 		if err != nil {
 			slog.Error("failed to update status", "device_id", plug.ID, "device_name", plug.Name, "error", err)
