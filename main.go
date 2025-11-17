@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	port   = flag.Int("port", 9257, "Port to bind.")
-	token  = flag.String("token", "", "The SwitchBot open token.")
-	secret = flag.String("secret", "", "The SwitchBot secret key.")
+	port   = flag.Int("port", 9257, "Port to bind")
+	token  = flag.String("token", "", "The SwitchBot open token")
+	secret = flag.String("secret", "", "The SwitchBot secret key")
+
+	scrapeIntervalSeconds = flag.Int("scrape-interval-seconds", 5*60, "Scrape interval in seconds")
 )
 
 func main() {

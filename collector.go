@@ -10,10 +10,6 @@ import (
 	"github.com/nasa9084/go-switchbot/v3"
 )
 
-const (
-	scrapeInterval = 60 * time.Second
-)
-
 type switchBotCollector struct {
 	client *switchbot.Client
 
@@ -81,14 +77,13 @@ func (c *switchBotCollector) init() error {
 
 // updateLoop periodically updates the metrics.
 func (c *switchBotCollector) updateLoop() {
-	ticker := time.NewTicker(scrapeInterval)
+	ticker := time.NewTicker(time.Duration(*scrapeIntervalSeconds) * time.Second)
 
+	// First update
 	c.update()
-	for {
-		select {
-		case <-ticker.C:
-			c.update()
-		}
+
+	for range ticker.C {
+		c.update()
 	}
 }
 
